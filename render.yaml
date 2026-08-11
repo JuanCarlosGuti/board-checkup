@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: board-checkup
+    runtime: node
+    # Starter, no Free: los servicios gratis se duermen a los 15 minutos y tardan
+    # ~1 minuto en despertar. Contra el presupuesto sincrono de Sidekick eso no
+    # es lentitud, es el producto roto en la primera invocacion del dia.
+    plan: starter
+    # Ohio esta en la costa este de EE.UU., que es donde vive la API de monday.
+    # PENDIENTE: confirmarlo midiendo la latencia real desde el servicio ya
+    # desplegado. Los 517 ms de la medicion inicial eran Valledupar, no monday.
+    region: ohio
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    autoDeploy: true
+    domains:
+      - app.crearcodecesar.com
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Publico por diseno: se sirve en /monday-app-association.json
+      - key: MONDAY_CLIENT_ID
+        value: 7ce83fbbf1ecf2cbd2c545305396b442
+      # sync: false = el dashboard es la fuente de verdad y el Blueprint no
+      # intenta crearlas. Es la leccion de UPPERYA: una sola variable declarada
+      # mal rompe el sync ENTERO y el repo deja de tener efecto sin avisar.
+      - key: MONDAY_SIGNING_SECRET
+        sync: false
+      - key: MONDAY_CLIENT_SECRET
+        sync: false
+      - key: HSTS_MAX_AGE
+        value: "86400"
+      - key: LIVE_SCAN_LIMIT
+        value: "500"
