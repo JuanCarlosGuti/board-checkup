@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ReglaDuplicados } from './rules/duplicates.rule';
+import { ReglaEtiquetasParecidas } from './rules/similar-labels.rule';
+import { ReglaSinEstado } from './rules/missing-status.rule';
+import { ReglaSinResponsable } from './rules/missing-owner.rule';
+import { ReglaEstancado } from './rules/stale.rule';
+import { ReglaVencidoAbierto } from './rules/overdue-open.rule';
 import { ContextoDeTablero, Hallazgo, ItemDeTablero, Regla } from './rules/rule.types';
 
 export interface Diagnostico {
@@ -18,7 +23,14 @@ export interface Diagnostico {
 @Injectable()
 export class DiagnosticsService {
   // Al agregar una regla nueva, va aqui. Nada mas cambia.
-  private readonly reglas: Regla[] = [new ReglaDuplicados()];
+  private readonly reglas: Regla[] = [
+    new ReglaDuplicados(),
+    new ReglaVencidoAbierto(),
+    new ReglaSinResponsable(),
+    new ReglaEstancado(),
+    new ReglaSinEstado(),
+    new ReglaEtiquetasParecidas(),
+  ];
 
   analizar(items: ItemDeTablero[], ctx: ContextoDeTablero): Diagnostico {
     const hallazgos = this.reglas.flatMap((r) => r.evaluar(items, ctx));

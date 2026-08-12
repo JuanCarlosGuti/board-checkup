@@ -36,26 +36,50 @@ export class DiagnoseBoardController {
     @Req() req: Request & { monday: MondayClaims },
   ): Promise<{ severityCode?: number; runtimeMetadata?: unknown; output: Salida }> {
     const t0 = Date.now();
-    const boardId = String(body?.payload?.inputFields?.boardId ?? '');
-    if (!boardId) {
+    const campos = body?.payload?.inputFields ?? {};
+    const texto = String(campos.boardName ?? campos.board ?? campos.boardId ?? '').trim();
+    if (!texto) {
       return { output: { ok: false, mensaje: 'No entendi de que tablero hablas. Dime el nombre del tablero.' } };
     }
 
     const limite = Number(this.config.get('LIVE_SCAN_LIMIT') ?? 500);
+    const token = req.monday.shortLivedToken;
 
     try {
-      const lectura = await this.api.leerTablero(req.monday.shortLivedToken, boardId, limite);
+      // Los usuarios dicen "el tablero de Marketing", no un id. Si viene un id
+      // numerico lo usamos tal cual; si no, lo resolvemos por nombre.
+      let boardId = texto;
+      if (!/^\d+$/.test(texto)) {
+        const r = await this.api.resolverTablero(token, texto);
+        if (r.ambiguos) {
+          const nombres = r.ambiguos.map((b) => `"${b.name}"`).join(', ');
+          return { output: { ok: false, mensaje: `Hay varios tableros que encajan: ${nombres}. ¿Cual de ellos?` } };
+        }
+        if (!r.encontrado) {
+          return { output: { ok: false, mensaje: `No encontre ningun tablero llamado "${texto}".` } };
+        }
+        boardId = r.encontrado.id;
+      }
+
+      const lectura = await this.api.leerTablero(token, boardId, limite);
+
+      // Las columnas se descubren por tipo, no por nombre: el tablero de un
+      // cliente puede tener la columna de estado llamada "Fase" o "Pipeline".
+      const porTipo = (...tipos: string[]) => lectura.columnas.find((c) => tipos.includes(c.type))?.id;
 
       const ctx: ContextoDeTablero = {
         boardId: lectura.boardId,
-        etiquetasCerradas: ['Listo', 'Done', 'Completado', 'Terminado'],
+        columnaEstado: porTipo('status'),
+        columnaResponsable: porTipo('people', 'person'),
+        columnaFecha: porTipo('date'),
+        etiquetasCerradas: ['Listo', 'Done', 'Completado', 'Terminado', 'Hecho', 'Finalizado'],
         diasParaEstancado: 30,
         ahora: new Date(),
       };
 
       const d = this.diagnostics.analizar(lectura.items, ctx);
       const ms = Date.now() - t0;
-      this.log.log(`diagnose-board board=${boardId} items=${d.itemsAnalizados} ms=${ms} api=${lectura.msApi}`);
+      this.log.log(`diagnose-board board=${lectura.boardId} items=${d.itemsAnalizados} ms=${ms} api=${lectura.msApi}`);
 
       return {
         output: {
@@ -78,7 +102,7 @@ export class DiagnoseBoardController {
       if (e instanceof PresupuestoAgotadoError) {
         return { output: { ok: false, mensaje: 'Tu cuenta de monday agoto su cuota de API por este minuto. Intentalo de nuevo en un momento.' } };
       }
-      this.log.error(`diagnose-board fallo board=${boardId}: ${(e as Error).message}`);
+      this.log.error(`diagnose-board fallo tablero="${texto}": ${(e as Error).message}`);
       return { output: { ok: false, mensaje: 'No pude leer ese tablero. Revisa que exista y que la app tenga acceso.' } };
     }
   }

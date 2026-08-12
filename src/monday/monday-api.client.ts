@@ -83,6 +83,32 @@ export class MondayApiClient {
     };
   }
 
+  /**
+   * Busca un tablero por lo que dijo el usuario. Ver ResolucionDeTablero.
+   *
+   * Estrategia en tres pasos, de mas exacta a mas laxa: coincidencia exacta
+   * normalizada, luego "empieza por", luego "contiene". Se corta en el primer
+   * paso que devuelva algo, para que "Marketing" no traiga tambien
+   * "Marketing 2024 archivado" si existe un tablero llamado justo "Marketing".
+   */
+  async resolverTablero(token: string, texto: string): Promise<ResolucionDeTablero> {
+    const datos = await this.consultar<TablerosResp>(token, `
+      query { boards(limit: 100, state: active) { id name } }
+    `);
+    const tableros = datos.boards ?? [];
+    const buscado = normalizar(texto);
+    if (!buscado) return {};
+
+    const exactos = tableros.filter((b) => normalizar(b.name) === buscado);
+    const empiezan = tableros.filter((b) => normalizar(b.name).startsWith(buscado));
+    const contienen = tableros.filter((b) => normalizar(b.name).includes(buscado));
+
+    const candidatos = exactos.length ? exactos : empiezan.length ? empiezan : contienen;
+    if (candidatos.length === 1) return { encontrado: candidatos[0] };
+    if (candidatos.length > 1) return { ambiguos: candidatos.slice(0, 5) };
+    return {};
+  }
+
   private async consultar<T>(token: string, query: string): Promise<T> {
     const res = await fetch(MondayApiClient.ENDPOINT, {
       method: 'POST',
@@ -110,9 +136,31 @@ export class PresupuestoAgotadoError extends Error {
   constructor() { super('La cuenta agoto su presupuesto de API de monday por este minuto'); }
 }
 
+interface TablerosResp { boards: Array<{ id: string; name: string }> }
 interface MetaResp { boards: Array<{ id: string; name: string; items_count: number; columns: ColumnaDeTablero[] }> }
 interface ItemsResp {
   boards: Array<{ items_page: { cursor: string | null; items: Array<{
     id: string; name: string; updated_at: string; column_values: Array<{ id: string; text: string | null }>;
   }> } }>;
+}
+
+/**
+ * Resuelve el id de un tablero a partir de lo que dijo el usuario.
+ *
+ * Los usuarios dicen "el tablero de Marketing", no "board 18426090306". La
+ * documentacion de monday lo pide explicitamente: los tools reciben nombres y
+ * resuelven los ids por dentro.
+ *
+ * Devuelve el id si hay UNA coincidencia clara. Si hay varias, devuelve la lista
+ * para que el tool pueda repreguntar en vez de adivinar: elegir el tablero
+ * equivocado y reportar sobre el es peor que pedir una aclaracion.
+ */
+export interface ResolucionDeTablero {
+  encontrado?: { id: string; name: string };
+  ambiguos?: Array<{ id: string; name: string }>;
+}
+
+/** minusculas, sin tildes, sin espacios de sobra: para comparar nombres de tablero */
+function normalizar(s: string): string {
+  return (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
 }
