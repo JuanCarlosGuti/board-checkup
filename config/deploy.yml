@@ -8,7 +8,9 @@
 # al socket de Docker detras de un panel expuesto a internet.
 
 service: board-checkup
-image: ghcr.io/juancarlosguti/board-checkup
+# Kamal antepone `registry.server` automaticamente: aqui va SOLO owner/repo.
+# Ponerlo completo produce ghcr.io/ghcr.io/... y el paquete queda en una ruta absurda.
+image: juancarlosguti/board-checkup
 
 servers:
   web:

@@ -46,7 +46,11 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts
+          # Sin -H y con un solo tipo de llave a proposito. `ssh-keyscan -H`
+          # guarda las entradas HASHEADAS y con los tres tipos (rsa/ecdsa/ed25519),
+          # y Net::SSH -la libreria de Ruby que usa Kamal- falla al compararlas:
+          # devuelve HostKeyMismatch aunque la huella sea correcta.
+          ssh-keyscan -t ed25519 "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts
 
       - name: Desplegar
         env:
