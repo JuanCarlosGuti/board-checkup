@@ -6,5 +6,6 @@ coverage/
 .env.local
 tools/resultados.json
 
-# Kamal: el archivo de secretos NUNCA va al repo
-.kamal/secrets
+# .kamal/secrets SI se versiona: solo contiene referencias a variables de
+# entorno (FOO=$FOO), ningun valor. Kamal lo necesita en el runner de CI.
+# Lo que nunca va al repo son los valores, que viven en los secrets de GitHub.
