@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+.git
+.github
+.kamal
+docs
+tools
+test
+*.md
+.env
+.env.*
+render.yaml

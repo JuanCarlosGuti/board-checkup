@@ -1,0 +1,56 @@
+name: Test, build and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit -p tsconfig.json
+      - run: npm test
+      - run: npm run build
+
+  deploy:
+    # Solo desde main, y solo si los tests pasaron. Nunca desde un PR.
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write     # para publicar la imagen en GHCR
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: false
+      - run: gem install kamal -N
+
+      - uses: docker/setup-buildx-action@v3
+
+      # La llave privada la genera Juan y la guarda como secret. El servidor
+      # solo conoce la publica.
+      - name: Configurar SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts
+
+      - name: Desplegar
+        env:
+          KAMAL_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          MONDAY_SIGNING_SECRET: ${{ secrets.MONDAY_SIGNING_SECRET }}
+          MONDAY_CLIENT_SECRET: ${{ secrets.MONDAY_CLIENT_SECRET }}
+        run: kamal deploy

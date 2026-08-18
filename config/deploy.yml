@@ -1,0 +1,56 @@
+# Kamal 2.x — despliegue de board-checkup
+#
+# Por que Kamal y no Coolify/Dokploy: ninguno de esos deja un panel de control
+# corriendo en el servidor. Kamal es un CLI que entra por SSH y ejecuta Docker.
+# Lo unico permanente es kamal-proxy, un binario pequeno en Go.
+# Coolify acumulo mas de veinte CVE criticos en 2026, varios CVSS 10.0 con RCE
+# como root, porque su trabajo es ejecutar configuracion del usuario con acceso
+# al socket de Docker detras de un panel expuesto a internet.
+
+service: board-checkup
+image: ghcr.io/juancarlosguti/board-checkup
+
+servers:
+  web:
+    - 159.195.235.225
+
+proxy:
+  ssl: true                      # certificado Let's Encrypt automatico
+  host: app.crearcodecesar.com
+  app_port: 3000
+  healthcheck:
+    path: /health
+    interval: 3
+    timeout: 30
+
+registry:
+  server: ghcr.io
+  username: JuanCarlosGuti
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+# La imagen se construye en GitHub Actions, NO en el servidor.
+# Un build de Angular o de Java puede pedir 2-4 GB de pico y tumbaria la caja
+# entera con todas las apps encima.
+builder:
+  arch: amd64
+
+env:
+  clear:
+    NODE_ENV: production
+    # Publico por diseno: se sirve en /monday-app-association.json
+    MONDAY_CLIENT_ID: 7ce83fbbf1ecf2cbd2c545305396b442
+    # Arranca conservador. Se sube a 31536000 tras unos dias estables.
+    HSTS_MAX_AGE: 86400
+    # Medido: 500 items = 1.650 ms desde Colombia, ~1.200 ms esperados desde Virginia
+    LIVE_SCAN_LIMIT: 500
+  secret:
+    - MONDAY_SIGNING_SECRET
+    - MONDAY_CLIENT_SECRET
+
+# Espera a que el healthcheck pase antes de mover el trafico al contenedor nuevo.
+deploy_timeout: 60
+drain_timeout: 30
+
+ssh:
+  user: deploy

@@ -5,3 +5,6 @@ coverage/
 .env
 .env.local
 tools/resultados.json
+
+# Kamal: el archivo de secretos NUNCA va al repo
+.kamal/secrets
