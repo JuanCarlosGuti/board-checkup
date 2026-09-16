@@ -68,11 +68,20 @@ npm run start:dev
 - [x] Guard del JWT de monday
 - [x] Run URL de `diagnose-board`
 - [x] HSTS y `monday-app-association.json`
-- [ ] Reglas 2 a 8 (sin responsable, vencidos, estancados, responsable desactivado, campos vacíos, etiquetas casi iguales, huérfanos)
-- [ ] Resolver el tablero por **nombre** y no por id — los usuarios dicen "el tablero de Marketing"
+- [x] Resolver el tablero por **nombre** y no por id — los usuarios dicen "el tablero de Marketing"
+- [x] Seis reglas implementadas y registradas en el servicio, con tests:
+      duplicados, etiquetas casi iguales, sin estado, sin responsable, estancado,
+      vencido-abierto
+- [ ] Tres reglas que faltan: responsable desactivado, campos vacíos, huérfanos
 - [ ] Registrar el bloque de acción en el Centro de desarrollo
 - [ ] Vista de tablero con las acciones correctivas
-- [ ] Escaneo programado e historial de puntaje
+- [ ] Escaneo programado e historial de puntaje (hoy no hay persistencia)
+
+> **Nota (2026-09-16).** Esta sección estuvo desactualizada desde el 2026-08-12:
+> decía que faltaban las reglas 2 a 8 y la resolución por nombre, cuando el commit
+> `aed22b3` ("Resolucion de tablero por nombre y cinco reglas mas") ya las había
+> traído. El README se quedó en el estado del día anterior. Verificado corriendo
+> `npx jest`: **29 tests en verde**, cubriendo cinco de las seis reglas.
 
 ## Lo que falta confirmar
 
