@@ -24,6 +24,9 @@ import { MondayClaims, MondayJwtGuard } from '../monday/monday-jwt.guard';
  * agotado, tablero inaccesible) se responden con 200 y un mensaje para el
  * usuario: no son fallos nuestros y reintentarlos 30 minutos no arregla nada.
  */
+/** tipos de columna que un item "bien llenado" deberia tener (ver ReglaCamposVacios) */
+const COLUMNAS_CLAVE = ['status', 'people', 'person', 'date', 'timeline', 'email', 'phone'];
+
 @Controller('tools')
 export class DiagnoseBoardController {
   private readonly log = new Logger(DiagnoseBoardController.name);
@@ -73,6 +76,13 @@ export class DiagnoseBoardController {
       // cliente puede tener la columna de estado llamada "Fase" o "Pipeline".
       const porTipo = (...tipos: string[]) => lectura.columnas.find((c) => tipos.includes(c.type))?.id;
 
+      // Los usuarios desactivados alimentan una sola regla; si la consulta
+      // falla, el diagnostico sigue sin ella en vez de caerse entero.
+      const usuariosDesactivados = await this.api.listarUsuariosDesactivados(token).catch((e: Error) => {
+        this.log.warn(`no se pudo listar usuarios desactivados: ${e.message}`);
+        return [] as string[];
+      });
+
       const ctx: ContextoDeTablero = {
         boardId: lectura.boardId,
         columnaEstado: porTipo('status'),
@@ -80,6 +90,10 @@ export class DiagnoseBoardController {
         columnaFecha: porTipo('date'),
         etiquetasCerradas: ['Listo', 'Done', 'Completado', 'Terminado', 'Hecho', 'Finalizado'],
         diasParaEstancado: 30,
+        usuariosDesactivados,
+        columnasClave: lectura.columnas
+          .filter((c) => COLUMNAS_CLAVE.includes(c.type))
+          .map((c) => ({ id: c.id, titulo: c.title })),
         ahora: new Date(),
       };
 

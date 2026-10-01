@@ -5,6 +5,9 @@ import { ReglaSinEstado } from './rules/missing-status.rule';
 import { ReglaSinResponsable } from './rules/missing-owner.rule';
 import { ReglaEstancado } from './rules/stale.rule';
 import { ReglaVencidoAbierto } from './rules/overdue-open.rule';
+import { ReglaResponsableDesactivado } from './rules/deactivated-owner.rule';
+import { ReglaCamposVacios } from './rules/empty-fields.rule';
+import { ReglaHuerfanos } from './rules/orphans.rule';
 import { ContextoDeTablero, Hallazgo, ItemDeTablero, Regla } from './rules/rule.types';
 
 export interface Diagnostico {
@@ -30,7 +33,15 @@ export class DiagnosticsService {
     new ReglaEstancado(),
     new ReglaSinEstado(),
     new ReglaEtiquetasParecidas(),
+    new ReglaResponsableDesactivado(),
+    new ReglaHuerfanos(),
+    new ReglaCamposVacios(),
   ];
+
+  /** ids de las reglas activas, en el orden en que corren */
+  reglasActivas(): string[] {
+    return this.reglas.map((r) => r.id);
+  }
 
   analizar(items: ItemDeTablero[], ctx: ContextoDeTablero): Diagnostico {
     const hallazgos = this.reglas.flatMap((r) => r.evaluar(items, ctx));

@@ -27,3 +27,17 @@ export function diasDesde(iso: string, ahora: Date): number {
   if (Number.isNaN(t)) return 0;
   return Math.floor((ahora.getTime() - t) / 86400000);
 }
+
+/**
+ * Nombres de persona que hay en el texto de una columna de personas.
+ * monday los entrega separados por coma: "Ana Perez, Juan Gomez".
+ */
+export function personasEn(texto: string | null): string[] {
+  if (!texto) return [];
+  return texto.split(",").map((n) => n.trim()).filter(Boolean);
+}
+
+/** minusculas, sin tildes, sin espacios de sobra: para comparar nombres de persona */
+export function normalizarPersona(nombre: string): string {
+  return (nombre ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+}

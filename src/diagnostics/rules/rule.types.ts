@@ -19,6 +19,16 @@ export interface ContextoDeTablero {
   etiquetasCerradas: string[];
   /** dias sin movimiento a partir de los cuales un item se considera estancado */
   diasParaEstancado: number;
+  /**
+   * nombres (tal como los muestra monday) de los usuarios desactivados de la
+   * cuenta; vacio o ausente si no se pudo consultar
+   */
+  usuariosDesactivados?: string[];
+  /**
+   * columnas que un item "bien llenado" deberia tener: las de tipo estado,
+   * personas, fecha, correo y telefono que existan en el tablero
+   */
+  columnasClave?: Array<{ id: string; titulo: string }>;
   /** momento del analisis, inyectado para que los tests sean deterministas */
   ahora: Date;
 }

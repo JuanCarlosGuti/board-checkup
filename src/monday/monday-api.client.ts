@@ -109,6 +109,22 @@ export class MondayApiClient {
     return {};
   }
 
+  /**
+   * Nombres de los usuarios desactivados de la cuenta.
+   *
+   * Una sola consulta, barata (no toca items), y por nombre a proposito: las
+   * columnas de personas se leen como texto para ahorrar presupuesto de
+   * complejidad, asi que el cruce es por nombre. Si la consulta falla, el
+   * diagnostico sigue sin esta regla: es mejor un reporte incompleto que
+   * ninguno.
+   */
+  async listarUsuariosDesactivados(token: string): Promise<string[]> {
+    const datos = await this.consultar<UsuariosResp>(token, `
+      query { users(kind: all, limit: 500) { name enabled } }
+    `);
+    return (datos.users ?? []).filter((u) => u.enabled === false).map((u) => u.name);
+  }
+
   private async consultar<T>(token: string, query: string): Promise<T> {
     const res = await fetch(MondayApiClient.ENDPOINT, {
       method: 'POST',
@@ -136,6 +152,7 @@ export class PresupuestoAgotadoError extends Error {
   constructor() { super('La cuenta agoto su presupuesto de API de monday por este minuto'); }
 }
 
+interface UsuariosResp { users: Array<{ name: string; enabled: boolean }> }
 interface TablerosResp { boards: Array<{ id: string; name: string }> }
 interface MetaResp { boards: Array<{ id: string; name: string; items_count: number; columns: ColumnaDeTablero[] }> }
 interface ItemsResp {

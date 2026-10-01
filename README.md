@@ -69,19 +69,14 @@ npm run start:dev
 - [x] Run URL de `diagnose-board`
 - [x] HSTS y `monday-app-association.json`
 - [x] Resolver el tablero por **nombre** y no por id — los usuarios dicen "el tablero de Marketing"
-- [x] Seis reglas implementadas y registradas en el servicio, con tests:
-      duplicados, etiquetas casi iguales, sin estado, sin responsable, estancado,
-      vencido-abierto
-- [ ] Tres reglas que faltan: responsable desactivado, campos vacíos, huérfanos
+- [x] Las **nueve** reglas implementadas y registradas en el servicio, con tests
+      (45 en verde): duplicados, etiquetas casi iguales, sin estado, sin responsable,
+      estancado, vencido-abierto, responsable desactivado, campos vacíos, huérfanos
+      (ver `docs/REGLAS.md` para la definición exacta de cada una)
 - [ ] Registrar el bloque de acción en el Centro de desarrollo
 - [ ] Vista de tablero con las acciones correctivas
 - [ ] Escaneo programado e historial de puntaje (hoy no hay persistencia)
 
-> **Nota (2026-09-16).** Esta sección estuvo desactualizada desde el 2026-08-12:
-> decía que faltaban las reglas 2 a 8 y la resolución por nombre, cuando el commit
-> `aed22b3` ("Resolucion de tablero por nombre y cinco reglas mas") ya las había
-> traído. El README se quedó en el estado del día anterior. Verificado corriendo
-> `npx jest`: **29 tests en verde**, cubriendo cinco de las seis reglas.
 
 ## Lo que falta confirmar
 
